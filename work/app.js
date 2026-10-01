@@ -332,7 +332,7 @@ function renderDiurnal() {
   const ax = axisBase(c);
   ch.setOption({
     animation: false,
-    grid: { left: 40, right: 12, top: 30, bottom: 28 },
+    grid: { left: 40, right: 12, top: 54, bottom: 28 },
     legend: { top: 0, left: 0, textStyle: { color: c.ink2, fontSize: 11 }, itemWidth: 14, itemHeight: 3 },
     tooltip: { trigger: 'axis', ...tipBase(c), valueFormatter: (v) => (v == null ? '—' : v + ' µg/m³') },
     xAxis: { type: 'category', data: [...Array(24).keys()].map((h) => pad(h) + ':00'), ...ax, splitLine: { show: false }, axisLabel: { ...ax.axisLabel, interval: 3 } },
@@ -434,7 +434,7 @@ function renderFire() {
   const ax = axisBase(c);
   ch.setOption({
     animation: false,
-    grid: { left: 52, right: 12, top: 34, bottom: 26 },
+    grid: { left: 52, right: 12, top: 54, bottom: 26 },
     legend: { top: 0, left: 0, textStyle: { color: c.ink2, fontSize: 11 }, itemWidth: 12, itemHeight: 8 },
     tooltip: { trigger: 'axis', ...tipBase(c) },
     xAxis: { type: 'category', data: H.fire.map((f) => f.d.slice(5).replace('-', '/')), ...ax, splitLine: { show: false } },
@@ -481,7 +481,7 @@ function renderRisk() {
   const lvl = (r) => (r >= 0.45 ? c.vunh : r >= 0.25 ? c.unh : c.good);
   ch.setOption({
     animation: false,
-    grid: { left: 40, right: 12, top: 34, bottom: 26 },
+    grid: { left: 40, right: 12, top: 54, bottom: 26 },
     legend: { top: 0, left: 0, textStyle: { color: c.ink2, fontSize: 11 }, itemWidth: 14, itemHeight: 6, data: ['输送风险指数', '新加坡南向来风概率', '源区降雨≥5mm 概率'] },
     tooltip: { trigger: 'axis', ...tipBase(c), valueFormatter: (v) => (v == null ? '—' : Math.round(v) + '%') },
     xAxis: { type: 'category', data: days, ...ax, splitLine: { show: false } },
@@ -500,7 +500,7 @@ function renderCams() {
   const cams = H.cams.hourly.time.map((s, j) => [ms(s), H.cams.hourly.pm2_5[j]]).filter((p) => p[0] >= from);
   ch.setOption({
     animation: false,
-    grid: { left: 40, right: 12, top: 34, bottom: 26 },
+    grid: { left: 40, right: 12, top: 54, bottom: 26 },
     legend: { top: 0, left: 0, textStyle: { color: c.ink2, fontSize: 11 }, itemWidth: 14, itemHeight: 3 },
     tooltip: { trigger: 'axis', ...tipBase(c), valueFormatter: (v) => (v == null ? '—' : v + ' µg/m³'), axisPointer: { label: { formatter: (p) => fmtDT(p.value) } } },
     xAxis: { type: 'time', ...ax, splitLine: { show: false }, axisLabel: { ...ax.axisLabel, formatter: (v) => fmtMD(v) } },
@@ -543,7 +543,7 @@ function renderSeas() {
   const wk = H.clim.weeks.map((w) => fmtMD(Date.parse(w + 'T00:00:00Z')) + ' 起');
   ch.setOption({
     animation: false,
-    grid: { left: 40, right: 12, top: 34, bottom: 26 },
+    grid: { left: 40, right: 12, top: 54, bottom: 26 },
     legend: { top: 0, left: 0, textStyle: { color: c.ink2, fontSize: 11 }, itemWidth: 14, itemHeight: 3, data: ['SEAS5 中位数', '1996–2025 同期平均'] },
     tooltip: { trigger: 'axis', ...tipBase(c), formatter: (ps) => { const j = ps[0].dataIndex; return `${wk[j]} 一周<br>预报中位数 <b style="font-family:${MONO}">${r0(s.med[j])}</b> mm（10–90%：${r0(s.lo[j])}–${r0(s.hi[j])}）<br>常年平均 <b style="font-family:${MONO}">${r0(s.clim[j])}</b> mm · 约为常年 ${Math.round(100 * s.med[j] / s.clim[j])}%`; } },
     xAxis: { type: 'category', data: wk, boundaryGap: false, ...ax, splitLine: { show: false } },
@@ -561,7 +561,7 @@ function renderWindClim() {
   const wk = H.clim.weeks.map((w) => fmtMD(Date.parse(w + 'T00:00:00Z')) + ' 起');
   ch.setOption({
     animation: false,
-    grid: { left: 40, right: 12, top: 34, bottom: 26 },
+    grid: { left: 40, right: 12, top: 54, bottom: 26 },
     legend: { top: 0, left: 0, textStyle: { color: c.ink2, fontSize: 11 }, itemWidth: 14, itemHeight: 3 },
     tooltip: { trigger: 'axis', ...tipBase(c), valueFormatter: (v) => v + '%' },
     xAxis: { type: 'category', data: wk, boundaryGap: false, ...ax, splitLine: { show: false } },
