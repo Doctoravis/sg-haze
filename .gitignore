@@ -1,0 +1,13 @@
+# local tool settings
+.claude/
+
+# raw NEA API pages: only the per-day aggregates (agg_*) and completion markers (done_*) are kept
+work/cache/psi_*.json
+work/cache/pm_*.json
+work/cache/rain_*.json
+
+# run logs and scratch
+work/data/refresh.log
+work/data/*.tmp
+work/data/published_stamp.txt
+_site/

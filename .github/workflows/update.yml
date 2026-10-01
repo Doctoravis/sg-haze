@@ -1,0 +1,71 @@
+name: Update data and deploy
+
+# Four times a day (12:40, 18:40, 00:40, 06:40 Singapore time) the data job refreshes the NEA readings,
+# rainfall and satellite images and commits them. Forecast inputs refresh on the first run of each
+# Singapore day only (work/data/forecast_stamp.txt). The deploy job then publishes the site.
+# A push to main (code or text edits) redeploys without refreshing data.
+on:
+  schedule:
+    - cron: '40 4,10,16,22 * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: site
+  cancel-in-progress: false
+
+jobs:
+  data:
+    # Windows runner: the scripts are Windows PowerShell 5.1 and use System.Drawing
+    runs-on: windows-latest
+    if: github.event_name != 'push'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Refresh data
+        shell: powershell
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File work\update.ps1
+      - name: Commit data
+        shell: powershell
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A work
+          git diff --cached --quiet
+          if ($LASTEXITCODE -ne 0) { git commit -m "Data update"; git push }
+          exit 0
+
+  deploy:
+    needs: data
+    # run after a data refresh, and also on a plain push (where the data job is skipped)
+    if: always() && (needs.data.result == 'success' || needs.data.result == 'skipped')
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Assemble site
+        run: |
+          mkdir -p _site/sat
+          # work/index.html is a body fragment (the same file is published as a claude.ai artifact); wrap it
+          {
+            printf '<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body>'
+            cat work/index.html
+            printf '</body></html>'
+          } > _site/index.html
+          cp work/app.js work/data.js work/notes.js _site/
+          cp work/sat/* _site/sat/
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4

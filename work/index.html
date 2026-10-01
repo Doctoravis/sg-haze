@@ -1,0 +1,333 @@
+<title>新加坡雾霾追踪</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@700;900&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one reading column of three numbered sections (the user's own 1/2/3), each a stack of instrument panels; header carries live status. */
+:root{
+  --bg:#eaeef1; --panel:#fbfcfc; --panel2:#f2f5f7; --ink:#15212b; --ink2:#46545f; --muted:#7a8792; --line:#d6dde2; --line2:#e6ebee;
+  --accent:#b35c14; --accent-wash:rgba(179,92,20,.10);
+  --rain:#1c86ad; --rain-wash:rgba(28,134,173,.13);
+  --good:#0ca30c; --mod:#2a78d6; --unh:#eda100; --vunh:#ec835a; --haz:#d03b3b;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#8a63d2; --s5:#e87ba4;
+  --seq0:#f4ede4; --seq1:#e7c9a2; --seq2:#cf9150; --seq3:#a65d1c; --seq4:#5f3208;
+  --f-display:"Noto Serif SC","Songti SC",serif; --f-body:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif; --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1418; --panel:#161d22; --panel2:#1c242a; --ink:#e8eef2; --ink2:#b3c0c9; --muted:#7f8d97; --line:#2b353c; --line2:#222b31;
+  --accent:#f09a4a; --accent-wash:rgba(240,154,74,.12); --rain:#47b3d9; --rain-wash:rgba(71,179,217,.16);
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#9085e9; --s5:#d55181;
+  --seq0:#221d19; --seq1:#4a3421; --seq2:#86531f; --seq3:#c97c2c; --seq4:#f7c27e; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1418; --panel:#161d22; --panel2:#1c242a; --ink:#e8eef2; --ink2:#b3c0c9; --muted:#7f8d97; --line:#2b353c; --line2:#222b31;
+  --accent:#f09a4a; --accent-wash:rgba(240,154,74,.12); --rain:#47b3d9; --rain-wash:rgba(71,179,217,.16);
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#9085e9; --s5:#d55181;
+  --seq0:#221d19; --seq1:#4a3421; --seq2:#86531f; --seq3:#c97c2c; --seq4:#f7c27e; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+img{max-width:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.6}
+.wrap{max-width:1240px;margin:0 auto;padding-inline:20px;padding-block:28px 48px;display:flex;flex-direction:column;gap:28px}
+h1,h2,h3{margin:0;text-wrap:balance}
+h1{font-family:var(--f-display);font-weight:900;font-size:clamp(28px,4.4vw,44px);letter-spacing:.02em;line-height:1.15}
+h2{font-family:var(--f-display);font-weight:700;font-size:24px;display:flex;align-items:baseline;gap:12px}
+h2 .no{font-family:var(--f-mono);font-size:14px;color:var(--accent);font-weight:600}
+h3{font-size:15px;font-weight:700}
+p{margin:0}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.sub{color:var(--ink2);max-width:72ch}
+.muted{color:var(--muted);font-size:12.5px}
+.eyebrow{font-size:12px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase}
+header{display:flex;flex-direction:column;gap:14px;border-bottom:1px solid var(--line);padding-bottom:22px}
+.status-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:12.5px;font-weight:500;border:1px solid var(--line);background:var(--panel)}
+.dot{width:9px;height:9px;border-radius:50%;flex:none}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.kpi{background:var(--panel);padding:14px 16px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.kpi .v{font-family:var(--f-mono);font-size:26px;font-weight:600;line-height:1.1}
+.kpi .v small{font-size:13px;color:var(--muted);font-weight:400}
+.kpi .l{font-size:12.5px;color:var(--ink2)}
+section{display:flex;flex-direction:column;gap:14px}
+.sec-head{display:flex;flex-direction:column;gap:6px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.panel-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:14px}
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--panel2)}
+.seg button{border:0;background:transparent;color:var(--ink2);font:inherit;font-size:12.5px;padding:5px 11px;cursor:pointer}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn{border:1px solid var(--line);background:var(--panel2);color:var(--ink);font:inherit;font-size:12.5px;padding:5px 11px;border-radius:8px;cursor:pointer}
+.btn:hover{border-color:var(--ink2)}
+.chart{width:100%;min-width:0}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--ink2);align-items:center}
+.legend i{display:inline-block;width:14px;height:8px;border-radius:2px;margin-right:5px;vertical-align:middle}
+.days{display:grid;grid-template-columns:repeat(15,1fr);gap:3px}
+@media (max-width:640px){.days{grid-template-columns:repeat(10,1fr)}}
+.day{border:0;border-radius:5px;padding:4px 0 3px;font:inherit;font-family:var(--f-mono);font-size:11px;cursor:pointer;color:#111;display:flex;flex-direction:column;align-items:center;line-height:1.2}
+.day b{font-size:12.5px}
+.day[aria-pressed="true"]{outline:2px solid var(--ink);outline-offset:1px}
+.insights{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:10px}
+.ins{border-left:3px solid var(--rain);background:var(--panel2);padding:10px 12px;border-radius:0 8px 8px 0;display:flex;flex-direction:column;gap:3px}
+.ins.amber{border-left-color:var(--accent)}
+.ins .big{font-family:var(--f-mono);font-size:22px;font-weight:600}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px;max-height:360px}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th,td{padding:6px 10px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line2)}
+th{position:sticky;top:0;background:var(--panel2);color:var(--ink2);font-weight:500;z-index:1}
+td:first-child,th:first-child{text-align:left}
+tbody tr{cursor:pointer}
+tbody tr:hover{background:var(--rain-wash)}
+.bar{display:inline-block;height:6px;border-radius:3px;background:var(--rain);vertical-align:middle;margin-left:6px}
+/* map */
+.mapbox{position:relative;width:100%;aspect-ratio:2/1;max-width:100%;background:#0b1a24;border-radius:8px;overflow:hidden}
+.mapbox img{position:absolute;inset:0;width:100%;height:100%;object-fit:fill}
+.mapbox svg{position:absolute;inset:0;width:100%;height:100%}
+.maprow{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px}
+@media (max-width:900px){.maprow{grid-template-columns:1fr}}
+.dayinfo{display:flex;flex-direction:column;gap:8px}
+.kv{display:flex;justify-content:space-between;gap:10px;border-bottom:1px dashed var(--line);padding-bottom:5px;font-size:13px}
+.kv span:last-child{font-family:var(--f-mono);font-weight:600}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.checks{display:flex;flex-wrap:wrap;gap:12px;font-size:12.5px;color:var(--ink2)}
+.checks label{display:inline-flex;gap:5px;align-items:center;cursor:pointer}
+/* forecast */
+.cond{display:flex;flex-direction:column;gap:6px;padding:12px 14px;border:1px solid var(--line);border-radius:8px;background:var(--panel2)}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;padding:1px 8px;border-radius:999px;width:fit-content}
+.chip.no{background:rgba(208,59,59,.14);color:var(--haz)}
+.chip.part{background:rgba(237,161,0,.16);color:var(--accent)}
+.chip.yes{background:rgba(12,163,12,.14);color:var(--good)}
+.timeline{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px}
+.tl{padding:12px 14px;border-radius:8px;border:1px solid var(--line);display:flex;flex-direction:column;gap:6px;background:var(--panel)}
+.tl .when{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.tl .what{font-weight:700;font-size:15px}
+.scen{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:10px}
+.sc{padding:12px 14px;border-radius:8px;background:var(--panel2);display:flex;flex-direction:column;gap:5px;border-top:3px solid var(--line)}
+.sc.base{border-top-color:var(--accent)}
+.sc .p{font-family:var(--f-mono);font-size:24px;font-weight:600}
+ul.tight{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+footer{border-top:1px solid var(--line);padding-top:18px;display:flex;flex-direction:column;gap:10px;font-size:12.5px;color:var(--ink2)}
+footer ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
+footer a{color:var(--ink2)}
+a{color:var(--rain)}
+.note{font-size:12.5px;color:var(--ink2);background:var(--accent-wash);padding:8px 12px;border-radius:8px}
+.refresh{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+.refresh .go{border:0;background:var(--ink);color:var(--panel);font:inherit;font-weight:700;font-size:14px;padding:9px 18px;border-radius:8px;cursor:pointer}
+.refresh .go:hover{background:var(--accent)}
+.refresh .go:disabled{opacity:.55;cursor:progress}
+.refresh .info{display:flex;flex-direction:column;gap:2px;font-size:12.5px;color:var(--ink2);min-width:0}
+.refresh .msg{color:var(--accent);font-weight:500}
+.mapbox .nosat{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#cfe3ee;font-size:14px;padding:16px;text-align:center}
+.mapbox.empty img,.mapbox.empty svg{visibility:hidden}
+.tl.bad{border-top:3px solid var(--vunh)}.tl.mid{border-top:3px solid var(--unh)}.tl.good{border-top:3px solid var(--good)}
+.factors{display:flex;flex-wrap:wrap;gap:6px}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">Singapore · Transboundary Haze Watch · 2026</div>
+  <h1>新加坡雾霾追踪</h1>
+  <p class="sub">2026 年 9 月 1 日以来新加坡逐小时空气质量、降雨与风向，印尼火点与烟霾卫星图，以及未来数周的改善判断。数据截至 <span class="mono" id="asof">—</span>（新加坡时间）。</p>
+  <div class="refresh">
+    <button class="go" id="refreshBtn" hidden>⟳ 刷新数据</button>
+    <div class="info">
+      <span>追踪数据更新于 <b class="mono" id="builtTop">—</b> · 预判更新于 <b class="mono" id="fcTop">—</b>（每天最多更新一次）</span>
+      <span class="msg" id="refreshMsg"></span>
+    </div>
+  </div>
+  <div class="status-row" id="statusRow"></div>
+  <div class="kpis" id="kpis"></div>
+</header>
+
+<!-- ============ 1 ============ -->
+<section id="aq">
+  <div class="sec-head">
+    <h2><span class="no">01</span>空气质量逐时追踪</h2>
+    <p class="sub">NEA 五个监测区的逐小时读数。浅蓝色竖带是识别出的降雨时段；底部箭头为新加坡地面风的去向，橙色表示来自东南、南、西南方向的风，即把苏门答腊和加里曼丹烟雾吹向新加坡的风向。拖动底部滑块或在图上滚轮缩放。</p>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <h3>每日最高 24 小时 PSI</h3>
+      <span class="muted">点击某天放大到该日，并同步第 02 部分的卫星图</span>
+    </div>
+    <div class="days" id="days"></div>
+    <div class="legend" id="bandLegend"></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <div class="controls">
+        <div class="seg" role="group" aria-label="指标" id="metricSeg">
+          <button id="m-psi" data-m="psi" aria-pressed="true">24 小时 PSI</button>
+          <button id="m-pm1" data-m="pm1" aria-pressed="false">1 小时 PM2.5</button>
+          <button id="m-pm24" data-m="pm24" aria-pressed="false">24 小时 PM2.5</button>
+        </div>
+        <div class="seg" role="group" aria-label="显示方式" id="viewSeg">
+          <button id="v-range" data-v="range" aria-pressed="true">全岛区间</button>
+          <button id="v-regions" data-v="regions" aria-pressed="false">五个分区</button>
+        </div>
+      </div>
+      <div class="controls">
+        <button class="btn" id="zoom7">近 7 天</button>
+        <button class="btn" id="zoomAll">整个 9 月</button>
+      </div>
+    </div>
+    <div class="legend" id="mainLegend"></div>
+    <div id="mainChart" class="chart" style="height:560px"></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <h3>降雨对空气质量的影响</h3>
+      <span class="muted">雨前 = 降雨开始前 3 小时全岛平均 1 小时 PM2.5；回升 = 雨停后 PM2.5 回到雨前水平 90% 所需时间</span>
+    </div>
+    <div class="insights" id="rainInsights"></div>
+    <div class="tablewrap">
+      <table id="rainTable"><thead><tr>
+        <th>降雨开始</th><th>持续</th><th>全岛平均雨量</th><th>最大覆盖</th><th>雨前 PM2.5</th><th>雨中/雨后最低</th><th>降幅</th><th>回升用时</th><th>次日 24h PSI 变化</th>
+      </tr></thead><tbody></tbody></table>
+    </div>
+    <p class="muted">点击任一行，上方主图跳到该场雨前后 3 天。只列出雨前 PM2.5 ≥ 20 µg/m³ 的降雨（有雾霾时的降雨才有比较意义）。PM2.5 回落也可能部分来自同时发生的风向变化，这里没有剔除。</p>
+  </div>
+
+  <div class="grid2">
+    <div class="panel">
+      <div class="panel-head"><h3>日内变化：每天每小时的 1 小时 PM2.5</h3></div>
+      <p class="muted">全岛五区平均值，µg/m³。颜色越深越浑浊。</p>
+      <div id="heatChart" class="chart" style="height:420px"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h3>一天中哪个时段最差</h3></div>
+      <p class="muted">9 月 1 日以来所有日子按小时平均的 1 小时 PM2.5，并分成有无显著降雨的日子。</p>
+      <div id="diurnalChart" class="chart" style="height:300px"></div>
+      <div class="insights" id="diurnalIns"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 2 ============ -->
+<section id="map">
+  <div class="sec-head">
+    <h2><span class="no">02</span>火点与烟霾卫星图</h2>
+    <p class="sub">NASA NOAA-20 卫星每日下午过境的真彩色影像，叠加 VIIRS 热异常（火点，红色）与气溶胶光学厚度（AOD，越黄红烟霾越浓；云区没有数值）。灰白色的均匀雾状区域即烟霾。</p>
+  </div>
+  <div class="panel">
+    <div class="panel-head">
+      <div class="controls">
+        <button class="btn" id="prevDay" aria-label="前一天">◀</button>
+        <button class="btn" id="playBtn">▶ 播放</button>
+        <button class="btn" id="nextDay" aria-label="后一天">▶</button>
+        <span class="mono" id="mapDate" style="font-size:16px;font-weight:600"></span>
+      </div>
+      <div class="checks">
+        <label><input type="checkbox" id="lyrTc" checked> 真彩色</label>
+        <label><input type="checkbox" id="lyrFire" checked> 火点</label>
+        <label><input type="checkbox" id="lyrAod"> 气溶胶 AOD</label>
+        <label><input type="checkbox" id="lyrLbl" checked> 地名与风向</label>
+      </div>
+    </div>
+    <input type="range" id="daySlider" min="0" max="29" value="29" aria-label="选择日期">
+    <div class="maprow">
+      <div class="mapbox" id="mapbox">
+        <img id="imgTc" alt="当日真彩色卫星影像">
+        <img id="imgAod" alt="" hidden>
+        <img id="imgFire" alt="">
+        <svg viewBox="0 0 200 100" preserveAspectRatio="none" id="mapSvg" aria-hidden="true"></svg>
+        <div class="nosat" id="noSat" hidden>当天的卫星图还没有发布（NOAA-20 下午过境，约 16:00 后可用）。稍后点“刷新数据”即可。</div>
+      </div>
+      <div class="dayinfo">
+        <h3 id="dayTitle"></h3>
+        <div id="dayKv"></div>
+        <p class="muted">火点指数 = 当日 VIIRS 火点像素数（相对值，受云量影响：云多的日子火点会被低估）。区域框：苏门答腊中南部 99–106.3°E、加里曼丹 108.5–118°E。</p>
+      </div>
+    </div>
+    <div id="fireChart" class="chart" style="height:250px"></div>
+  </div>
+</section>
+
+<!-- ============ 3 ============ -->
+<section id="fc">
+  <div class="sec-head">
+    <h2><span class="no">03</span>未来几周展望</h2>
+    <p class="sub">新加坡的雾霾要真正结束，需要两件事之一发生，最好同时发生：源区（南苏门答腊、加里曼丹的泥炭地）持续下雨把火压下去；或者风向从东南/西南转为北风、东北风，不再把烟吹过来。下面逐项看模型预报与气候规律。</p>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head"><h3>改善的先决条件与当前判断</h3><span class="muted"><span id="judgeDate"></span> · 本页基于下列数据的综合评估，非官方预报</span></div>
+    <div class="grid3" id="conds"></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head"><h3>未来 8 周分段预判与情景概率</h3><span class="muted">由预报数据按固定规则计算，随预判每天更新一次</span></div>
+    <div class="timeline" id="timeline"></div>
+    <div class="scen" id="scen"></div>
+  </div>
+
+  <div class="grid2">
+    <div class="panel">
+      <div class="panel-head"><h3>未来 15 天：烟霾输送风险</h3></div>
+      <p class="muted">ECMWF 51 成员集合预报。橙线 = 新加坡刮东南到西南风的概率；蓝线 = 源区（巨港附近、帕朗卡拉亚附近）日雨量 ≥ 5 mm 的概率；柱 = 输送风险指数 = 南风概率 ×（1 − 源区降雨概率）×（1 − 本地降雨概率/2）。</p>
+      <div id="riskChart" class="chart" style="height:300px"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h3>未来 5 天：模型 PM2.5 与实测对比</h3></div>
+      <p class="muted">CAMS 大气成分模型在新加坡格点的 PM2.5 预报，与 NEA 全岛平均 1 小时实测对照。模型常常低估泥炭烟霾，适合看趋势，不宜看绝对值。</p>
+      <div id="camsChart" class="chart" style="height:300px"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head"><h3>未来 16 天：各地日雨量预报</h3><span class="muted">Open-Meteo 最佳模型组合，mm/日</span></div>
+    <div id="fc16Chart" class="chart" style="height:330px"></div>
+  </div>
+
+  <div class="grid2">
+    <div class="panel">
+      <div class="panel-head"><h3>10–11 月逐周降雨：季节预报 vs 常年</h3></div>
+      <div class="seg" role="group" aria-label="区域" id="seasSeg">
+        <button id="sr-sum" data-r="sum" aria-pressed="true">南苏门答腊+占碑</button>
+        <button id="sr-kal" data-r="kal" aria-pressed="false">中/南加里曼丹</button>
+        <button id="sr-sg" data-r="sg" aria-pressed="false">新加坡</button>
+      </div>
+      <p class="muted">ECMWF SEAS5 季节集合：实线为中位数，阴影为 10–90% 成员区间；虚线为 1996–2025 年同周平均（ERA5）。</p>
+      <div id="seasChart" class="chart" style="height:280px"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h3>风向何时转：新加坡南风日占比（气候统计）</h3></div>
+      <p class="muted">1996–2025 年各周中主导风来自东南—南—西南（100°–260°）的天数比例；厄尔尼诺年为 1997、2002、2004、2006、2009、2015、2018、2023。</p>
+      <div id="windClimChart" class="chart" style="height:280px"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head"><h3>接下来值得盯的信号</h3></div>
+    <ul class="tight" id="signals"></ul>
+  </div>
+</section>
+
+<footer>
+  <h3>数据与信息来源</h3>
+  <ol>
+    <li>新加坡国家环境局 NEA / data.gov.sg 实时 API：逐小时 PSI、24 小时与 1 小时 PM2.5、全岛约 80 个雨量站 5 分钟雨量（<span id="neaRange">2026-09-01 起</span>）。<a href="https://data.gov.sg/collections/1379/view" target="_blank" rel="noopener">data.gov.sg</a> · <a href="https://www.haze.gov.sg/" target="_blank" rel="noopener">haze.gov.sg</a></li>
+    <li>NEA 每日雾霾通报（Haze Situation Update），2026 年 9 月 4、9、14、19、25–30 日等。<a href="https://www.nea.gov.sg/media/news/advisories/index/haze-situation-update-30-september-2026" target="_blank" rel="noopener">9 月 30 日</a> · <a href="https://www.nea.gov.sg/media/news/advisories/index/haze-situation-update-29-september-2026" target="_blank" rel="noopener">9 月 29 日</a> · <a href="https://www.nea.gov.sg/media/news/advisories/index/haze-situation-update-14-september-2026" target="_blank" rel="noopener">9 月 14 日</a></li>
+    <li>新加坡气象局 MSS：4 天预报、双周展望（9 月 16–30 日）、季风更新（6 月 3 日）。<a href="https://www.weather.gov.sg/weather-forecast-4dayoutlook/" target="_blank" rel="noopener">4 天预报</a> · <a href="https://www.weather.gov.sg/weather-fortnightly-outlook/" target="_blank" rel="noopener">双周展望</a> · <a href="https://www.weather.gov.sg/weather-forecast-monsoon-update/" target="_blank" rel="noopener">季风更新</a></li>
+    <li>东盟专业气象中心 ASMC：区域雾霾现状（警戒级别 3）、2026 年 9–11 月季节展望（9 月 2 日发布）。<a href="https://asmc.asean.org/home/" target="_blank" rel="noopener">区域雾霾</a> · <a href="https://asmc.asean.org/asmc-seasonal-outlook/" target="_blank" rel="noopener">季节展望</a></li>
+    <li>NASA GIBS / Worldview：NOAA-20 VIIRS 真彩色影像、NOAA-20 与 Suomi NPP VIIRS 375 m 热异常、NOAA-20 VIIRS Deep Blue AOD。<a href="https://worldview.earthdata.nasa.gov/" target="_blank" rel="noopener">worldview.earthdata.nasa.gov</a></li>
+    <li>Open-Meteo：新加坡逐时风向风速（历史预报档案）、16 天预报、ECMWF IFS 集合预报、ECMWF SEAS5 季节预报、ERA5 1996–2025 再分析气候统计、CAMS 空气质量预报。<a href="https://open-meteo.com/" target="_blank" rel="noopener">open-meteo.com</a></li>
+    <li>ENSO 与 IOD：NOAA CPC ENSO 诊断讨论（Niño 3.4 周值 9 月 16 日 +3.0°C）、澳大利亚气象局气候驱动因子监测。<a href="https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/enso_advisory/ensodisc.shtml" target="_blank" rel="noopener">NOAA CPC</a> · <a href="https://www.bom.gov.au/climate/enso/" target="_blank" rel="noopener">BoM</a></li>
+    <li>火点数量与区域情况：Malay Mail（马来西亚环境局 DOE，9 月 29 日加里曼丹 327、苏门答腊 191 个火点）；Free Malaysia Today（9 月 12–14 日加里曼丹火点 301→461→808）；The Star（ASMC 统计 1 月至 8 月 27 日 15,652 个火点；专家对 10 月转风的判断）。<a href="https://www.malaymail.com/news/malaysia/2026/09/30/doe-over-500-hotspots-in-kalimantan-and-sumatra-behind-haze-in-malaysia/237144" target="_blank" rel="noopener">Malay Mail</a> · <a href="https://www.freemalaysiatoday.com/category/nation/2026/09/15/kalimantan-hotspots-surge-to-808-raising-risk-of-more-haze" target="_blank" rel="noopener">FMT</a> · <a href="https://www.thestar.com.my/news/nation/2026/08/30/experts-october-could-see-clearer-skies" target="_blank" rel="noopener">The Star</a></li>
+    <li>新加坡本轮纪录：9 月 4 日 24 小时 PSI 为 2023 年 10 月 8 日以来首次进入不健康；9 月 29 日五区全部不健康。<a href="https://www.ibtimes.sg/singapore-haze-turns-unhealthy-first-time-since-2023-central-psi-hits-105-93603" target="_blank" rel="noopener">IBTimes SG</a> · <a href="https://www.malaymail.com/news/singapore/2026/09/29/singapore-haze-worsens-as-all-five-regions-enter-unhealthy-range/236935" target="_blank" rel="noopener">Malay Mail</a> · <a href="https://www.thestar.com.my/aseanplus/aseanplus-news/2026/09/29/haze-in-singapore-air-quality-in-all-five-regions-unhealthy-pm25-readings-elevated-across-island" target="_blank" rel="noopener">The Star</a></li>
+    <li>历史对照：新加坡国家图书馆局 Infopedia「Haze pollution」（2015 年雾霾至 11 月中旬随季风降雨结束）。<a href="https://www.nlb.gov.sg/main/article-detail?cmsuuid=0a5ea199-00be-4eda-b017-9cc0553c8819" target="_blank" rel="noopener">NLB Infopedia</a></li>
+  </ol>
+  <p class="muted">追踪数据每天自动更新四次，点击“刷新数据”可读取之后的最新读数；本页数据更新于 <span id="builtAt" class="mono">—</span>（新加坡时间）；预判所用的预报每天最多更新一次。火点官方统计、厄尔尼诺背景等文字说明为人工整理，更新于 <span id="notesAt" class="mono">—</span>。降雨事件识别、输送风险指数、分段预判与情景概率均为本页按规则做的推算，不代表 NEA 或 MSS 的官方预报；健康建议请以 NEA 每日通报为准。</p>
+</footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+<script src="data.js"></script>
+<script src="notes.js"></script>
+<script src="app.js"></script>
